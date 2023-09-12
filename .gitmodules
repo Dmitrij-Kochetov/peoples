@@ -1,0 +1,9 @@
+[submodule "peoples_graph"]
+	path = peoples_graph
+	url = git@github.com:Dmitrij-Kochetov/peoples_graph.git
+[submodule "peoples_rest"]
+	path = peoples_rest
+	url = git@github.com:Dmitrij-Kochetov/peoples_rest.git
+[submodule "peoples_kafka"]
+	path = peoples_kafka
+	url = git@github.com:Dmitrij-Kochetov/peoples_kafka.git
