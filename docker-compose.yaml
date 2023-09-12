@@ -1,0 +1,80 @@
+version: "2.20"
+
+services:
+  kafka:
+    container_name: "kafka"
+    image: "bitnami/kafka:latest"
+    env_file:
+      - deploy/kafka.env
+    volumes:
+      - kafka:/bitnami/kafka
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --topic FIO --describe" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kafka-ui:
+    container_name: "kafka-ui"
+    image: "provectuslabs/kafka-ui:latest"
+    ports:
+      - "8080:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    env_file:
+      - deploy/kafka-ui.env
+
+  postgres:
+    container_name: "postgres"
+    image: "postgres:15-alpine3.18"
+    networks:
+      db_net:
+        aliases:
+          - database
+    ports:
+      - "5432:5432"
+    env_file:
+      - deploy/postgres.env
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    container_name: "migrate"
+    image: "migrate/migrate:latest"
+    networks:
+      - db_net
+    volumes:
+      - ./migrations:/migrations
+    command: ["-path", "/migrations", "-database",  "postgres://postgres:postgres@database:5432/postgres?sslmode=disable", "up", "3"]
+    links:
+      - postgres
+
+  redis:
+    container_name: "redis"
+    image: "redis:7.0-alpine3.18"
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass redis
+    volumes:
+      - cache:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+
+volumes:
+  kafka:
+  database:
+  cache:
+
+networks:
+  db_net:
