@@ -1,6 +1,10 @@
-/name_consumer
-/rest_api
-/graph_api
+/peoples_data
+/peoples_graph
+/peoples_kafka
+/peoples_rest
 
 #Goland folder
 /.idea
+
+#Environment file
+*.env

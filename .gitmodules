@@ -7,3 +7,6 @@
 [submodule "peoples_kafka"]
 	path = peoples_kafka
 	url = git@github.com:Dmitrij-Kochetov/peoples_kafka.git
+[submodule "peoples_data"]
+	path = peoples_data
+	url = git@github.com:Dmitrij-Kochetov/peoples_data.git
