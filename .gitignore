@@ -1,3 +1,6 @@
 /name_consumer
 /rest_api
 /graph_api
+
+#Goland folder
+/.idea
