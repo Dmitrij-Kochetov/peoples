@@ -1,49 +1,31 @@
 package config
 
 import (
+	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config/graph_config"
+	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config/kafka_config"
+	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config/rest_config"
 	"log"
 	"os"
-	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Config struct {
-	Db    Db
-	Redis Redis
-	Kafka Kafka
+type IConfig interface {
+	graph_config.Config | kafka_config.Config | rest_config.Config
 }
 
-type Db struct {
-	DbUrl string `env:"DB_URL"`
-}
-
-type Redis struct {
-	RedisUrl string        `env:"REDIS_URL"`
-	RedisExp time.Duration `env:"REDIS_EXP"`
-}
-
-type Kafka struct {
-	KafkaUrl     string `env:"KAFKA_URL"`
-	KafkaTopic   string `env:"KAFKA_TOPIC"`
-	KafkaGroupID string `env:"KAFKA_GROUP_ID"`
-}
-
-func LoadConfig() *Config {
+func LoadConfig[C IConfig](cfg C) C {
 	cfgPath := os.Getenv("CONFIG_PATH")
 	if cfgPath == "" {
-		log.Fatalf("[!PANIC!] Config path environment variable is not set!")
+		log.Fatalf("[!Panic!] Config path variable is not set!")
 	}
 
 	if _, err := os.Stat(cfgPath); err != nil {
 		log.Fatalf("[!Panic!] Config file is not exists!")
 	}
 
-	var cfg Config
-
 	if err := cleanenv.ReadConfig(cfgPath, &cfg); err != nil {
 		log.Fatalf("[!Panic!] %s", err)
 	}
-
-	return &cfg
+	return cfg
 }
