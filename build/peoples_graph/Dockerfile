@@ -9,12 +9,10 @@ RUN apk update && apk add --no-cache git
 
 WORKDIR /app
 
-COPY ../../peoples_graph/go.mod .
+COPY . .
 COPY go.sum .
 
 RUN go mod download
-
-COPY ../../peoples_graph .
 
 # Build the binary.
 RUN CGO_ENABLED=0 GOOS=linux go build -o main /app/cmd/peoples_graph/main.go
@@ -26,7 +24,7 @@ FROM scratch
 
 # Copy our static executable.
 COPY --from=builder /app/main /app/main
-COPY --from=builder /app/config /app/config
+COPY --from=builder /app/deploy/peoples_graph/.env /app/deploy/peoples_graph/.env
 
 # Run the hello binary.
 ENTRYPOINT ["/app/main"]

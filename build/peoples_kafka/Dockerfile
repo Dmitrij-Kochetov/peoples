@@ -9,12 +9,10 @@ RUN apk update && apk add --no-cache git
 
 WORKDIR /app
 
-COPY ../../peoples_kafka/go.mod .
+COPY . .
 COPY go.sum .
 
 RUN go mod download
-
-COPY ../../peoples_kafka .
 
 # Build the binary.
 RUN CGO_ENABLED=0 GOOS=linux go build -o main /app/cmd/peoples_kafka/main.go
@@ -26,7 +24,7 @@ FROM scratch
 
 # Copy our static executable.
 COPY --from=builder /app/main /app/main
-COPY --from=builder /app/config /app/config
+COPY --from=builder /app/deploy/peoples_kafka/.env /app/deploy/peoples_kafka/.env
 
 # Run the hello binary.
 ENTRYPOINT ["/app/main"]
