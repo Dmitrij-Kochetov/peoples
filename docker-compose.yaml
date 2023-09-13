@@ -49,9 +49,12 @@ services:
     image: "migrate/migrate:latest"
     networks:
       - db_net
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - ./migrations:/migrations
-    command: ["-path", "/migrations", "-database",  "postgres://postgres:postgres@database:5432/postgres?sslmode=disable", "up", "3"]
+    command: ["-path", "/migrations", "-database",  "postgres://postgres:postgres@database:5432/postgres?sslmode=disable", "up"]
     links:
       - postgres
 
@@ -75,6 +78,7 @@ volumes:
   kafka:
   database:
   cache:
+  migrations:
 
 networks:
   db_net:
