@@ -17,13 +17,13 @@ type People struct {
 }
 
 type CreatePeople struct {
-	FirstName  string
-	LastName   string
-	Patronymic string
-	Age        int
-	Sex        string
-	Nation     string
-	Deleted    bool
+	FirstName  *string `json:"first_name"`
+	LastName   *string `json:"last_name"`
+	Patronymic string  `json:"patronymic,omitempty"`
+	Age        int     `json:"age,omitempty"`
+	Sex        string  `json:"sex,omitempty"`
+	Nation     string  `json:"nation,omitempty"`
+	Deleted    bool    `json:"deleted,omitempty"`
 }
 
 type Peoples []People
