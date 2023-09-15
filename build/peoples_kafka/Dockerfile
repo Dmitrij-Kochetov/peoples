@@ -5,7 +5,12 @@ FROM golang:alpine AS builder
 
 # Install git.
 # Git is required for fetching the dependencies.
-RUN apk update && apk add --no-cache git
+RUN apk --no-cache add \
+          alpine-sdk \
+          librdkafka-dev \
+          pkgconf && \
+        rm -rf /var/cache/apk/*
+
 
 WORKDIR /app
 
@@ -15,7 +20,8 @@ COPY go.sum .
 RUN go mod download
 
 # Build the binary.
-RUN CGO_ENABLED=0 GOOS=linux go build -o main /app/cmd/peoples_kafka/main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags "-extldflags -static" -tags musl \
+     -o main /app/cmd/peoples_kafka/main.go
 
 #####################################
 #   STEP 2 build a small image      #
