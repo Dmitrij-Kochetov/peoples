@@ -1,30 +1,70 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config"
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config/kafka_config"
-	"github.com/segmentio/kafka-go"
+	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/kafka"
+	_ "github.com/lib/pq"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
-type Consumer struct {
-	consumer *kafka.Reader
-}
-
-func NewConsumer() (*Consumer, error) {
-	return nil, nil
-}
-
-type Producer struct {
-	producer *kafka.Writer
-}
-
-func NewProducer() (*Producer, error) {
-	return nil, nil
-}
-
 func main() {
-	var cfg kafka_config.Config
-	cfg = config.LoadConfig(cfg)
-	fmt.Printf("%v\n", cfg)
+	cfg := config.LoadConfig(kafka_config.Config{})
+	errChan, err := run(cfg)
+	if err != nil {
+		log.Fatalf("Couldn't run: %v", err)
+	}
+	if err := <-errChan; err != nil {
+		log.Fatalf("Error while running: %v", err)
+	}
+}
+
+func run(cfg kafka_config.Config) (<-chan error, error) {
+	server, err := kafka.NewServerFromConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	errChan := make(chan error, 1)
+
+	ctx, stop := signal.NotifyContext(context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+
+	go func() {
+		<-ctx.Done()
+		log.Println("Shutting down...")
+
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+		defer func() {
+			server.CloseAll()
+			stop()
+			cancel()
+			close(errChan)
+		}()
+
+		if err := server.Shutdown(ctxTimeout); err != nil {
+			errChan <- err
+		}
+
+		log.Println("Gracefully shutting down")
+	}()
+
+	go func() {
+		log.Println("Starting server...")
+
+		if err := server.ListenAndServe(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	return errChan, nil
 }
