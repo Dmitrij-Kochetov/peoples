@@ -10,12 +10,12 @@ import (
 )
 
 type CachePeopleRepo struct {
-	client *redis.Client
+	Client *redis.Client
 	exp    time.Duration
 }
 
 func NewCachePeopleRepo(client *redis.Client, exp time.Duration) *CachePeopleRepo {
-	return &CachePeopleRepo{client: client, exp: exp}
+	return &CachePeopleRepo{Client: client, exp: exp}
 }
 
 func (c *CachePeopleRepo) Create(ctx context.Context, people dto.People) error {
@@ -24,7 +24,7 @@ func (c *CachePeopleRepo) Create(ctx context.Context, people dto.People) error {
 		return err
 	}
 
-	if err := c.client.Set(ctx, people.ID.String(), data, c.exp).Err(); err != nil {
+	if err := c.Client.Set(ctx, people.ID.String(), data, c.exp).Err(); err != nil {
 		return err
 	}
 
@@ -32,7 +32,7 @@ func (c *CachePeopleRepo) Create(ctx context.Context, people dto.People) error {
 }
 
 func (c *CachePeopleRepo) FindById(ctx context.Context, uuid uuid.UUID) (*dto.People, error) {
-	result, err := c.client.Get(ctx, uuid.String()).Result()
+	result, err := c.Client.Get(ctx, uuid.String()).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *CachePeopleRepo) Update(ctx context.Context, people dto.People) error {
 }
 
 func (c *CachePeopleRepo) Delete(ctx context.Context, uuid uuid.UUID) error {
-	if err := c.client.Del(ctx, uuid.String()).Err(); err != nil {
+	if err := c.Client.Del(ctx, uuid.String()).Err(); err != nil {
 		return err
 	}
 	return nil

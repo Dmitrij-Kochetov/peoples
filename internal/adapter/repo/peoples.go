@@ -46,21 +46,7 @@ func (p *PeopleRepo) GetAllByFilter(ctx context.Context, filter dto.Filter) (*dt
 }
 
 func (p *PeopleRepo) Create(ctx context.Context, people dto.CreatePeople) error {
-	id, err := p.db.Create(people)
-	if err != nil {
-		return err
-	}
-
-	return p.cache.Create(ctx, dto.People{
-		ID:         *id,
-		FirstName:  people.FirstName,
-		LastName:   people.LastName,
-		Patronymic: people.Patronymic,
-		Age:        people.Age,
-		Sex:        people.Sex,
-		Nation:     people.Nation,
-		Deleted:    false,
-	})
+	return p.db.Create(people)
 }
 
 func (p *PeopleRepo) Update(ctx context.Context, people dto.People) error {
@@ -77,4 +63,14 @@ func (p *PeopleRepo) DeleteByID(ctx context.Context, uuid uuid.UUID) error {
 	}
 
 	return p.cache.Delete(ctx, uuid)
+}
+
+func (p *PeopleRepo) Close(ctx context.Context) error {
+	if err := p.db.DB.Close(); err != nil {
+		return err
+	}
+	if err := p.cache.Client.Close(); err != nil {
+		return err
+	}
+	return nil
 }
