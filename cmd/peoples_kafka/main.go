@@ -45,7 +45,10 @@ func run(cfg kafka_config.Config) (<-chan error, error) {
 		ctxTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
 		defer func() {
-			server.CloseAll()
+			err := server.Close()
+			if err != nil {
+				log.Fatalf("Couldn't close server: %v", err)
+			}
 			stop()
 			cancel()
 			close(errChan)

@@ -200,8 +200,13 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 }
 
-func (s *Server) CloseAll() {
-	s.consumer.Consumer.Unsubscribe()
+func (s *Server) Close() error {
+	if err := s.consumer.Consumer.Unsubscribe(); err != nil {
+		return err
+	}
 	s.producer.Producer.Close()
-	s.peopleRepo.DB.Close()
+	if err := s.peopleRepo.DB.Close(); err != nil {
+		return err
+	}
+	return nil
 }
