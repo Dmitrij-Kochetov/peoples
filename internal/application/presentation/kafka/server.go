@@ -4,21 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"sync"
+
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config/kafka_config"
 	db "github.com/Dmitrij-Kochetov/peoples/internal/adapter/database/repo"
+	internal "github.com/Dmitrij-Kochetov/peoples/internal/adapter/kafka"
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/logging"
 	"github.com/Dmitrij-Kochetov/peoples/internal/application/usecases"
 	dto "github.com/Dmitrij-Kochetov/peoples/internal/domain/dto/kafka"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/jmoiron/sqlx"
-	"log/slog"
-	"sync"
 )
 
 type Server struct {
 	logger     *slog.Logger
-	consumer   *Consumer
-	producer   *Producer
+	consumer   *internal.Consumer
+	producer   *internal.Producer
 	peopleRepo *db.DbPeopleRepo
 	doneChan   chan struct{}
 	closeChan  chan struct{}
@@ -27,23 +29,23 @@ type Server struct {
 func NewServerFromConfig(config kafka_config.Config) (*Server, error) {
 	logger := logging.SetUpLogger(config.Env)
 
-	dbConn, err := sqlx.Connect(config.DB.Driver, config.DB.DbURL)
+	dbConn, err := sqlx.Connect(config.DB.Driver, config.DB.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect %w", err)
 	}
 
 	peopleRepo := db.NewDbPeopleRepo(dbConn)
 
-	consumer, err := NewKafkaConsumer(config.Kafka.KafkaURL,
+	consumer, err := internal.NewKafkaConsumer(config.Kafka.Address,
 		config.Kafka.ConsumerTopic,
 		config.Kafka.ConsumerGroup,
-		config.Kafka.KafkaTimeout,
+		config.Kafka.Timeout,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka consumer %w", err)
 	}
 
-	producer, err := NewKafkaProducer(config.Kafka.KafkaURL, config.Kafka.ProducerTopic)
+	producer, err := internal.NewKafkaProducer(config.Kafka.Address, config.Kafka.ProducerTopic)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka producer %w", err)
@@ -85,6 +87,18 @@ func (s *Server) ListenAndServe() error {
 		return nil
 	}
 
+	handleError := func(e dto.Error) {
+		s.logger.Error(e.Message, slog.Attr{
+			Key:   "error",
+			Value: slog.StringValue(e.Error),
+		})
+
+		err := writeError(e)
+		if err != nil {
+			s.logger.Error("failed to write error to kafka", logging.Err(err))
+		}
+	}
+
 	go func() {
 		run := true
 
@@ -105,35 +119,34 @@ func (s *Server) ListenAndServe() error {
 
 				var payload dto.PeopleName
 				if err := json.Unmarshal(msg.Value, &payload); err != nil {
-					s.logger.Error("failed to unmarshal payload", logging.Err(err))
-
 					go func() {
 						wg.Add(1)
 						defer wg.Done()
-						if err := writeError(dto.Error{
+						handleError(dto.Error{
 							Message: "failed to unmarshal payload",
 							Error:   err.Error(),
-						}); err != nil {
-							s.logger.Error("failed to write error", logging.Err(err))
-						}
+						})
+					}()
+					commit(msg)
+					continue
+				}
+
+				if payload.FirstName == nil || payload.LastName == nil {
+					go func() {
+						wg.Add(1)
+						defer wg.Done()
+						handleError(dto.ErrRequiredFieldNotExists)
 					}()
 
 					commit(msg)
 					continue
 				}
 
-				if payload.FirstName == nil || payload.LastName == nil {
-					s.logger.Error("invalid payload: first name or last name is nil")
-
+				if *payload.FirstName == "" || *payload.LastName == "" {
 					go func() {
 						wg.Add(1)
 						defer wg.Done()
-						if err := writeError(dto.Error{
-							Message: "failed to unmarshal payload",
-							Error:   fmt.Errorf("invalid payload: first name or last name is nil").Error(),
-						}); err != nil {
-							s.logger.Error("failed to write error", logging.Err(err))
-						}
+						handleError(dto.ErrRequiredFieldIsEmpty)
 					}()
 
 					commit(msg)
@@ -145,12 +158,20 @@ func (s *Server) ListenAndServe() error {
 					defer wg.Done()
 					agifyInfo, err := usecases.AgifyPeople(*payload.FirstName)
 					if err != nil {
-						s.logger.Error("failed to get agify info", logging.Err(err))
+						handleError(dto.Error{
+							Message: err.Error(),
+							Error:   "agified failed",
+						})
+						commit(msg)
 						return
 					}
 					err = usecases.CreateAgifiedPeople(s.peopleRepo, payload, agifyInfo)
 					if err != nil {
-						s.logger.Error("failed to create agified people", logging.Err(err))
+						handleError(dto.Error{
+							Message: err.Error(),
+							Error:   "create agified failed",
+						})
+						commit(msg)
 						return
 					}
 					commit(msg)
