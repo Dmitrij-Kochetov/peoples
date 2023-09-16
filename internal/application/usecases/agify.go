@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"encoding/json"
+	"fmt"
 	db "github.com/Dmitrij-Kochetov/peoples/internal/adapter/database/repo"
 	"github.com/Dmitrij-Kochetov/peoples/internal/domain/dto"
 	"github.com/Dmitrij-Kochetov/peoples/internal/domain/dto/kafka"
@@ -66,6 +67,9 @@ func AgifyPeople(name string) (AgifyInfo, error) {
 	sex, err := doRequest(urls[1], name, GenderizeResponse{})
 	if err != nil {
 		return AgifyInfo{}, err
+	}
+	if sex.Gender == "" {
+		return AgifyInfo{}, fmt.Errorf("cannot get existing gender, possibly name is wrong")
 	}
 
 	nation, err := doRequest(urls[2], name, NationalizeResponse{})
