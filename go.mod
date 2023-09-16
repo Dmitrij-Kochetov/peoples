@@ -4,6 +4,7 @@ go 1.21.1
 
 require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2
+	github.com/go-chi/chi v1.5.5
 	github.com/google/uuid v1.3.1
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/jmoiron/sqlx v1.3.5
