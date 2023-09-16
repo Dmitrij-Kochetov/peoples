@@ -15,6 +15,7 @@ import (
 	dto "github.com/Dmitrij-Kochetov/peoples/internal/domain/dto/kafka"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 type Server struct {
