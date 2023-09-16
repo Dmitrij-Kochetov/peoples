@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config"
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config/kafka_config"
-	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/kafka"
+	"github.com/Dmitrij-Kochetov/peoples/internal/application/presentation/kafka"
 	_ "github.com/lib/pq"
 	"log"
 	"os"

@@ -7,14 +7,14 @@ type Config struct {
 }
 
 type KafkaConfig struct {
-	KafkaURL      string `env:"KAFKA_URL"`
+	Address       string `env:"KAFKA_ADDRESS"`
 	ConsumerTopic string `env:"KAFKA_CONSUMER_TOPIC"`
 	ConsumerGroup string `env:"KAFKA_CONSUMER_GROUP"`
 	ProducerTopic string `env:"KAFKA_PRODUCER_TOPIC"`
-	KafkaTimeout  int    `env:"KAFKA_TIMEOUT"`
+	Timeout       int    `env:"KAFKA_TIMEOUT"`
 }
 
 type DbConfig struct {
 	Driver string `env:"DB_DRIVER"`
-	DbURL  string `env:"DB_URL"`
+	URL    string `env:"DB_URL"`
 }
