@@ -3,11 +3,12 @@ package usecases
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	db "github.com/Dmitrij-Kochetov/peoples/internal/adapter/database/repo"
 	"github.com/Dmitrij-Kochetov/peoples/internal/domain/dto"
 	"github.com/Dmitrij-Kochetov/peoples/internal/domain/dto/kafka"
-	"io"
-	"net/http"
 )
 
 type AgifyResponse struct {
@@ -91,12 +92,11 @@ func AgifyPeople(name string) (AgifyInfo, error) {
 
 func CreateAgifiedPeople(db *db.DbPeopleRepo, name kafka.PeopleName, info AgifyInfo) error {
 	return db.Create(dto.CreatePeople{
-		FirstName:  name.FirstName,
-		LastName:   name.LastName,
+		FirstName:  *name.FirstName,
+		LastName:   *name.LastName,
 		Patronymic: name.Patronymic,
 		Age:        info.Age,
 		Sex:        info.Sex,
 		Nation:     info.Nation,
-		Deleted:    false,
 	})
 }
