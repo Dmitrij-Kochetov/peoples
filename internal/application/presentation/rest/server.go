@@ -3,8 +3,11 @@ package rest
 import (
 	"context"
 	"fmt"
-	"github.com/go-chi/chi"
 	"log/slog"
+	"net/http"
+	"time"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/config/rest_config"
 	"github.com/Dmitrij-Kochetov/peoples/internal/adapter/logging"
@@ -14,10 +17,17 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type serverCfg struct {
+	addr        string
+	timeout     time.Duration
+	idleTimeout time.Duration
+}
+
 type Server struct {
 	logger    *slog.Logger
 	repo      *repo.PeopleRepo
 	router    *chi.Mux
+	cfg       serverCfg
 	doneChan  chan struct{}
 	closeChan chan struct{}
 }
@@ -48,11 +58,25 @@ func NewServerFromConfig(cfg rest_config.Config) (*Server, error) {
 		router:    chi.NewRouter(),
 		doneChan:  make(chan struct{}),
 		closeChan: make(chan struct{}),
+		cfg: serverCfg{
+			addr:        cfg.Server.Address,
+			timeout:     cfg.Server.Timeout,
+			idleTimeout: cfg.Server.IdleTimeout,
+		},
 	}, nil
 }
 
-func (s *Server) ListenAndServe() error {
-	return nil
+func (s *Server) GetHttp() *http.Server {
+	s.setupRoutes()
+	srv := http.Server{
+		Addr:         s.cfg.addr,
+		Handler:      s.router,
+		IdleTimeout:  s.cfg.idleTimeout,
+		ReadTimeout:  s.cfg.timeout,
+		WriteTimeout: s.cfg.timeout,
+	}
+
+	return &srv
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
