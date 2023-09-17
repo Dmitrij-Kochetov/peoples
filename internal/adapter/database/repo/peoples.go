@@ -1,10 +1,11 @@
 package repo
 
 import (
+	"log"
+
 	"github.com/Dmitrij-Kochetov/peoples/internal/domain/dto"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"log"
 )
 
 type DbPeopleRepo struct {
@@ -52,8 +53,8 @@ func (p *DbPeopleRepo) Create(people dto.CreatePeople) error {
 	if _, err := tx.Exec(
 		`INSERT INTO peoples (first_name, last_name, patronymic, age, sex, nation)
 			VALUES ($1, $2, $3, $4, $5, $6)`,
-		*people.FirstName,
-		*people.LastName,
+		people.FirstName,
+		people.LastName,
 		people.Patronymic,
 		people.Age,
 		people.Sex,
@@ -80,15 +81,14 @@ func (p *DbPeopleRepo) Update(people dto.People) error {
 
 	if _, err := tx.Exec(
 		`UPDATE peoples 
-			SET first_name=$1, last_name=$2, patronymic=$3, age=$4, sex=$5, nation=$6, deleted=$7
-			WHERE id=$8`,
+			SET first_name=$1, last_name=$2, patronymic=$3, age=$4, sex=$5, nation=$6
+			WHERE id=$7`,
 		people.FirstName,
 		people.LastName,
 		people.Patronymic,
 		people.Age,
 		people.Sex,
 		people.Nation,
-		people.Deleted,
 		people.ID,
 	); err != nil {
 		if err := tx.Rollback(); err != nil {
