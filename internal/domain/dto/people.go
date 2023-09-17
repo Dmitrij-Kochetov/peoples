@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+
 	"github.com/google/uuid"
 )
 
@@ -17,13 +18,12 @@ type People struct {
 }
 
 type CreatePeople struct {
-	FirstName  *string `json:"first_name"`
-	LastName   *string `json:"last_name"`
-	Patronymic string  `json:"patronymic,omitempty"`
-	Age        int     `json:"age,omitempty"`
-	Sex        string  `json:"sex,omitempty"`
-	Nation     string  `json:"nation,omitempty"`
-	Deleted    bool    `json:"deleted,omitempty"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	Patronymic string `json:"patronymic,omitempty"`
+	Age        int    `json:"age,omitempty"`
+	Sex        string `json:"sex,omitempty"`
+	Nation     string `json:"nation,omitempty"`
 }
 
 type Peoples []People
